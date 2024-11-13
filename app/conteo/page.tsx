@@ -1,135 +1,78 @@
-"use client"
-
-import { useState } from "react"
-import { ArrowLeft } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Suspense } from "react"
+import { db } from "@/lib/db"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
+import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import ConteoCard from "@/components/conteo-card"
 
-interface CountState {
-  anaquel: string
-  excedente: string
-  status: "initial" | "success" | "error"
-}
-
-export default function Component() {
-  const [countState, setCountState] = useState<CountState>({
-    anaquel: "",
-    excedente: "",
-    status: "initial"
+async function getProductosParaContar() {
+  const inventarioActivo = await db.inventory.findFirst({
+    where: {
+      status: {
+        in: ["PENDING", "IN_PROGRESS"]
+      },
+    },
+    include: {
+      products: {
+        include: {
+          product: true,
+          counts: {
+            orderBy: {
+              countNumber: 'desc'
+            },
+            take: 1,
+          },
+        },
+      },
+    },
+    orderBy: {
+      date: "desc",
+    },
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Simulate validation - in this case, matching numbers
-    if (countState.anaquel === countState.excedente) {
-      setCountState(prev => ({ ...prev, status: "success" }))
-    } else {
-      setCountState(prev => ({ ...prev, status: "error" }))
-    }
-  }
+  if (!inventarioActivo) return []
 
-  const handleRecount = () => {
-    setCountState({
-      anaquel: "",
-      excedente: "",
-      status: "initial"
-    })
-  }
+  return inventarioActivo.products.map((pi) => ({
+    id: pi.id,
+    sku: pi.product.sku,
+    description: pi.product.description,
+    erpQuantity: pi.erpQuantity,
+    status: pi.status,
+    lastCount: pi.counts[0],
+  }))
+}
 
-  const getCardClassName = () => {
-    const baseClass = "w-full max-w-md mx-auto mt-4 p-6 space-y-4"
-    switch (countState.status) {
-      case "success":
-        return `${baseClass} bg-green-100`
-      case "error":
-        return `${baseClass} bg-red-100`
-      default:
-        return `${baseClass} bg-background`
-    }
-  }
+export default async function ConteoPage() {
+  const productos = await getProductosParaContar()
 
   return (
     <div className="min-h-screen p-4 space-y-4 bg-gray-100">
       <div className="flex items-center justify-between gap-4">
-        <Link href="/" className="flex items-center text-sm text-muted-foreground hover:text-primary">
+        <Link
+          href="/"
+          className="flex items-center text-sm text-muted-foreground hover:text-primary"
+        >
           <ArrowLeft className="w-4 h-4 mr-1" />
           Volver
         </Link>
         <div className="flex-1 max-w-sm">
-          <Input
-            type="search"
-            placeholder="Buscar"
-            className="w-full"
-          />
+          <Input type="search" placeholder="Buscar SKU" className="w-full" />
         </div>
       </div>
 
-      <Card className={getCardClassName()}>
-        <CardContent className="p-0 space-y-4">
-          <div className="flex justify-between items-start">
-            <div className="space-y-1.5">
-              <p className="text-sm text-muted-foreground">A-W-ME021401</p>
-              <h2 className="text-2xl font-semibold">
-                Arcos Memalloy Borgatta .014 superiores 10 piezas
-              </h2>
-            </div>
-            {countState.status !== "initial" && (
-              <Badge variant={countState.status === "success" ? "default" : "destructive"}>
-                {countState.status === "success" ? "Conteo exitoso" : "Conteo fallido"}
-              </Badge>
-            )}
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label htmlFor="anaquel" className="text-sm font-medium">
-                  Anaquel
-                </label>
-                <Input
-                  id="anaquel"
-                  type="number"
-                  value={countState.anaquel}
-                  onChange={(e) => setCountState(prev => ({ ...prev, anaquel: e.target.value }))}
-                  disabled={countState.status !== "initial"}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="excedente" className="text-sm font-medium">
-                  Excedente
-                </label>
-                <Input
-                  id="excedente"
-                  type="number"
-                  value={countState.excedente}
-                  onChange={(e) => setCountState(prev => ({ ...prev, excedente: e.target.value }))}
-                  disabled={countState.status !== "initial"}
-                  required
-                />
-              </div>
-            </div>
-
-            {countState.status === "initial" ? (
-              <Button type="submit" className="w-full">
-                Guardar
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                onClick={handleRecount}
-                variant={countState.status === "success" ? "outline" : "default"}
-                className="w-full"
-              >
-                Contar de nuevo
-              </Button>
-            )}
-          </form>
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Suspense fallback={<div>Cargando productos...</div>}>
+          {productos.length > 0 ? (
+            productos.map((producto) => (
+              <ConteoCard key={producto.id} producto={producto} />
+            ))
+          ) : (
+            <p className="col-span-full text-center text-gray-500 p-4">
+              No hay productos para contar en este momento
+            </p>
+          )}
+        </Suspense>
+      </div>
     </div>
   )
 }
