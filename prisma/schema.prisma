@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+}
+
+model Product {
+  id            Int               @id @default(autoincrement())
+  sku           String           @unique
+  description   String
+  inventories   ProductInventory[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model Inventory {
+  id              Int                 @id @default(autoincrement())
+  name            String
+  date            DateTime
+  status          InventoryStatus     @default(PENDING)
+  products        ProductInventory[]
+  createdBy       User                @relation("createdInventories", fields: [createdById], references: [id])
+  createdById     Int
+  confirmedBy     User?               @relation("confirmedInventories", fields: [confirmedById], references: [id])
+  confirmedById   Int?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([status])
+  @@index([date])
+}
+
+model ProductInventory {
+  id            Int           @id @default(autoincrement())
+  inventory     Inventory     @relation(fields: [inventoryId], references: [id])
+  inventoryId   Int
+  product       Product       @relation(fields: [productId], references: [id])
+  productId     Int
+  erpQuantity   Int          // Quantity in ERP system at inventory creation
+  counts        Count[]
+  status        CountStatus   @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([inventoryId, productId])
+  @@index([status])
+}
+
+model Count {
+  id                  Int               @id @default(autoincrement())
+  productInventory    ProductInventory  @relation(fields: [productInventoryId], references: [id])
+  productInventoryId  Int
+  shelfQuantity      Int
+  surplusQuantity    Int
+  totalQuantity      Int               // Calculated: shelf + surplus
+  difference         Int               // Calculated: total - erpQuantity
+  countNumber        Int               // 1 for first count, 2+ for recounts
+  status             CountStatus       @default(PENDING)
+  countedBy          User              @relation(fields: [countedById], references: [id])
+  countedById        Int
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@unique([productInventoryId, countNumber])
+  @@index([status])
+}
+
+model User {
+  id                   Int         @id @default(autoincrement())
+  email                String      @unique
+  name                 String
+  role                 UserRole
+  createdInventories   Inventory[] @relation("createdInventories")
+  confirmedInventories Inventory[] @relation("confirmedInventories")
+  counts               Count[]
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+}
+
+enum UserRole {
+  ADMIN
+  COUNTER
+}
+
+enum InventoryStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum CountStatus {
+  PENDING
+  CORRECT
+  INCORRECT
+  NEEDS_RECOUNT
+}

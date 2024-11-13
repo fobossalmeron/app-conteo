@@ -1,4 +1,3 @@
-import { db } from '@/lib/db'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -11,27 +10,31 @@ import {
 } from "@/components/ui/table"
 import Link from "next/link"
 
-async function getProducts() {
-  try {
-    return await db.product.findMany({
-      orderBy: {
-        sku: 'asc'
-      }
-    })
-  } catch (error) {
-    console.error('Error al obtener productos:', error)
-    return []
-  }
+interface InventoryItem {
+  sku: string
+  description: string
 }
 
-export default async function Component() {
-  const products = await getProducts()
-  const currentDate = new Date().toLocaleDateString('es-ES', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  })
+const inventoryItems: InventoryItem[] = [
+  {
+    sku: "301-440-P",
+    description: "Tubo Borgatta Roth UR..",
+  },
+  {
+    sku: "301-440-P",
+    description: "Tubo Borgatta Roth UR..",
+  },
+  {
+    sku: "301-440-P",
+    description: "Tubo Borgatta Roth UR..",
+  },
+  {
+    sku: "301-440-P",
+    description: "Tubo Borgatta Roth UR..",
+  },
+]
 
+export default function Component() {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6">Inventarios</h1>
@@ -41,15 +44,15 @@ export default async function Component() {
           <CardTitle className="text-xl sm:text-2xl font-bold">
             Inventario semanal de producto terminado
           </CardTitle>
-          <p className="text-muted-foreground">{currentDate}</p>
+          <p className="text-muted-foreground">10 de octubre 2024</p>
         </CardHeader>
         <CardContent>
           {/* Mobile view */}
           <div className="block md:hidden space-y-4">
-            {products.map((product) => (
-              <div key={product.id} className="border-b pb-4">
-                <div className="font-semibold">SKU: {product.sku}</div>
-                <div className="text-sm text-muted-foreground">{product.description}</div>
+            {inventoryItems.map((item, index) => (
+              <div key={index} className="border-b pb-4">
+                <div className="font-semibold">SKU: {item.sku}</div>
+                <div className="text-sm text-muted-foreground">{item.description}</div>
               </div>
             ))}
           </div>
@@ -64,10 +67,10 @@ export default async function Component() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {products.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell>{product.sku}</TableCell>
-                    <TableCell>{product.description}</TableCell>
+                {inventoryItems.map((item, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{item.sku}</TableCell>
+                    <TableCell>{item.description}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

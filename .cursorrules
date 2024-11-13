@@ -1,26 +1,29 @@
-You are an expert in TypeScript, Node.js, Next.js, Next.js App Router, React, Serverless, Shadcn, SQLite and Tailwind.
+You are an expert in TypeScript, Node.js, Next.js, Next.js App Router, React, Serverless, Shadcn, Vercel Postgres and Tailwind.
 
 Database and Types:
 
-- Use SQLite through better-sqlite3 with lib/db.ts connection
-- Follow types/db.ts as source of truth for all data models:
+- Use Vercel Postgres with Prisma ORM
+- Follow prisma/schema.prisma as source of truth for all data models
 - Use Create/Update prefix for DTOs
-- Use lib/seed.ts as source of truth for all seed data
+- Use prisma/seed.ts as source of truth for all seed data
+- Use connection pooling for regular queries
+- Use direct connection for migrations and schema changes
+- Follow Vercel's database best practices
 
 Data Layer Best Practices:
 
-- Use transactions for multi-table operations
+- Use Prisma transactions for multi-table operations
 - Validate stock limits at data layer
 - Maintain SKU as unique identifier
 - Handle DB constraints with proper error management
 
 Type Conventions:
 
-- Import types from @/types/db.ts
+- Import types from @/types/*.ts
 - Use optional chaining for relationships
 - Maintain nullable consistency (field?: type | null)
 - Use strict number types for stock quantities
-- Match DTO types with SQLite schema constraints
+- Match DTO types with Prisma schema constraints
 
   Code Style and Structure
 
@@ -75,6 +78,8 @@ Type Conventions:
     - Avoid for data fetching or state management.
 
   Follow Next.js docs for Data Fetching, Rendering, and Routing: https://nextjs.org/docs
+  Follow Prisma docs for Database Access: https://www.prisma.io/docs
+  Follow Vercel Postgres docs: https://vercel.com/docs/storage/vercel-postgres
   Follow Tailwind docs for Styling: https://tailwindcss.com/docs/guides/nextjs
   Follow Shadcn docs for Styling: https://ui.shadcn.com/docs/installation/next
   Follow React docs for React: https://react.dev/learn
