@@ -1,17 +1,4 @@
-# Cursor Starter Project
-Este es un proyecto starter diseñado específicamente para Cursor, que integra las siguientes tecnologías:
-Stack Principal
-- ⚡ Next.js
-- 🎨 Shadcn/ui
-- 💅 Tailwind CSS
-- 📝 TypeScript
-- 🎯 CursorRules
-- 🚀 Replit deploy file
-
-## Características
-- Preparado para Cursor y Replit
-- Componentes pre-configurados de Shadcn
-- Estructura de proyecto optimizada para TypeScript
-- Configuración lista para desarrollo con Next.js App Router
-
-Este starter te permite comenzar rápidamente un proyecto con las mejores prácticas y herramientas modernas del desarrollo web, optimizado para usar con el editor Cursor.
+- http://localhost:3000/inventario/1/conteo no está guardando los nuevos conteos de la primera card, curiosamente otras cards si
+- http://localhost:3000 si ya todo está en verde, debe mostrarse en verde, o mostrar su status
+- http://localhost:3000/inventario/5/conteo quitar la búsqueda de productos
+- http://localhost:3000/admin/inventario/6 debe mostrar el conteo de cada producto y si tienen conteos anteriores, también. Pero el último conteo debe ser el principal.
