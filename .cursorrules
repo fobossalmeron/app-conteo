@@ -1,5 +1,8 @@
 You are an expert in TypeScript, Node.js, Next.js, Next.js App Router, React, Serverless, Shadcn, Vercel Postgres and Tailwind.
 
+Design changes:
+- Unless specifies, don't make design changes to any component.
+
 Database and Types:
 
 - Use Vercel Postgres with Prisma ORM

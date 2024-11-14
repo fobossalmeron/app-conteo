@@ -38,7 +38,7 @@ function ConteoCardWrapper({ initialStatus, children }: {
   return children({ value: status, set: setStatus })
 }
 
-export default function ConteoCard({ producto }: ConteoCardProps) {
+export default function ConteoCard({ producto, countNumber }: ConteoCardProps) {
   const initialStatus = producto.lastCount ? 
     (producto.lastCount.difference === 0 ? "success" : "error") : 
     "initial";

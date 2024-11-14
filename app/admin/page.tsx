@@ -8,6 +8,30 @@ import { NewInventoryButton } from "@/components/new-inventory-button";
 
 async function getInventories() {
   try {
+    // Primero obtenemos los inventarios con sus conteos para validar
+    const inventoriesToCheck = await db.inventory.findMany({
+      where: { status: 'PENDING' },
+      include: {
+        products: {
+          include: {
+            counts: true
+          }
+        }
+      }
+    });
+
+    // Actualizamos los que tienen conteos
+    for (const inventory of inventoriesToCheck) {
+      const hasCountsAndPending = inventory.products.some(p => p.counts.length > 0);
+      if (hasCountsAndPending) {
+        await db.inventory.update({
+          where: { id: inventory.id },
+          data: { status: 'IN_PROGRESS' }
+        });
+      }
+    }
+
+    // Obtenemos los datos actualizados con todas las relaciones necesarias
     const inventories = await db.inventory.findMany({
       include: {
         createdBy: true,

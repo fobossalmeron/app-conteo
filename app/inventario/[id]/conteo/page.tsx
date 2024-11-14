@@ -5,11 +5,29 @@ import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import ConteoCard from "@/components/conteo-card"
 import { notFound } from "next/navigation"
+import { revalidatePath } from "next/cache"
 
 interface PageProps {
   params: Promise<{
     id: string
   }>
+}
+
+// Acción del servidor para actualizar el estado
+async function updateInventoryStatus(inventoryId: string) {
+  'use server'
+  
+  try {
+    await db.inventory.update({
+      where: { id: parseInt(inventoryId) },
+      data: { status: 'IN_PROGRESS' }
+    })
+  } catch (error) {
+    console.error('Error actualizando estado del inventario:', error)
+  }
+  
+  revalidatePath(`/inventario/${inventoryId}/conteo`)
+  revalidatePath('/admin')
 }
 
 async function getProductosParaContar(inventoryId: string) {
@@ -18,7 +36,10 @@ async function getProductosParaContar(inventoryId: string) {
       where: { 
         id: parseInt(inventoryId) 
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        status: true,
         products: {
           include: {
             product: true,
@@ -35,6 +56,11 @@ async function getProductosParaContar(inventoryId: string) {
 
     if (!inventory) return null;
 
+    // Si el inventario está pendiente, actualizamos su estado
+    if (inventory.status === 'PENDING') {
+      await updateInventoryStatus(inventoryId)
+    }
+
     return {
       inventory,
       products: inventory.products.map((pi) => ({
@@ -45,6 +71,7 @@ async function getProductosParaContar(inventoryId: string) {
         status: pi.status,
         inventoryId: inventory.id,
         lastCount: pi.counts[0],
+        countNumber: pi.counts[0]?.countNumber ?? 0
       }))
     };
   } catch (error) {
@@ -54,7 +81,6 @@ async function getProductosParaContar(inventoryId: string) {
 }
 
 export default async function ConteoPage({ params }: PageProps) {
-  // Validar y esperar los parámetros
   const validParams = await params
   if (!validParams?.id) {
     return notFound()
@@ -94,7 +120,6 @@ export default async function ConteoPage({ params }: PageProps) {
               <ConteoCard 
                 key={producto.id} 
                 producto={producto}
-                countNumber={producto.lastCount?.countNumber ?? 0}
               />
             ))
           ) : (

@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InventoryDetails } from "@/components/inventory-details";
+import { RefreshButton } from "@/components/refresh-button";
 
 interface PageProps {
   params: { id: string }
@@ -54,9 +55,12 @@ export default async function InventoryPage({ params }: PageProps) {
         <Card>
           <CardHeader className="space-y-1">
             <div className="text-sm text-muted-foreground">Inventario</div>
-            <CardTitle className="text-2xl font-bold">
-              {inventory.name}
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-2xl font-bold flex items-center gap-6">
+                {inventory.name}
+                <RefreshButton />
+              </CardTitle>
+            </div>
             <div className="text-sm text-muted-foreground">
               {format(new Date(inventory.date), "PPP", { locale: es })}
             </div>

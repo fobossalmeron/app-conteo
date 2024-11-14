@@ -34,11 +34,13 @@ async function getProductosParaContar() {
 
   return inventarioActivo.products.map((pi) => ({
     id: pi.id,
+    inventoryId: inventarioActivo.id,
     sku: pi.product.sku,
     description: pi.product.description,
     erpQuantity: pi.erpQuantity,
     status: pi.status,
     lastCount: pi.counts[0],
+    countNumber: pi.counts[0]?.countNumber ?? 1
   }))
 }
 
@@ -67,7 +69,6 @@ export default async function ConteoPage() {
               <ConteoCard 
                 key={producto.id} 
                 producto={producto}
-                countNumber={producto.lastCount?.countNumber ?? 1}
               />
             ))
           ) : (

@@ -1,4 +1,1 @@
-- http://localhost:3000/inventario/1/conteo no está guardando los nuevos conteos de la primera card, curiosamente otras cards si
-- http://localhost:3000 si ya todo está en verde, debe mostrarse en verde, o mostrar su status
 - http://localhost:3000/inventario/5/conteo quitar la búsqueda de productos
-- http://localhost:3000/admin/inventario/6 debe mostrar el conteo de cada producto y si tienen conteos anteriores, también. Pero el último conteo debe ser el principal.
