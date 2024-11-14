@@ -1,13 +1,13 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 
 export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-): Promise<NextResponse> {
+  req: NextRequest,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  { params }: { params: any }
+) {
   try {
-    const { id: paramId } = await params
-    const id = parseInt(paramId as string)
+    const id = parseInt(params.id)
     
     if (isNaN(id)) {
       return NextResponse.json(
@@ -46,4 +46,4 @@ export async function DELETE(
       { status: 500 }
     )
   }
-} 
+}
