@@ -10,79 +10,122 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import Link from "next/link"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
 
-async function getProducts() {
+async function getInventories() {
   try {
-    return await db.product.findMany({
-      orderBy: {
-        sku: 'asc'
-      }
+    return await db.inventory.findMany({
+      where: {
+        status: {
+          in: ["PENDING", "IN_PROGRESS"]
+        }
+      },
+      include: {
+        products: {
+          include: {
+            product: true,
+            counts: {
+              orderBy: {
+                countNumber: 'desc'
+              },
+              take: 1
+            }
+          }
+        }
+      },
+      orderBy: [
+        { status: 'asc' },
+        { date: 'desc' }
+      ]
     })
   } catch (error) {
-    console.error('Error al obtener productos:', error)
+    console.error('Error al obtener inventarios:', error)
     return []
   }
 }
 
-export default async function Component() {
-  const products = await getProducts()
-  const currentDate = new Date().toLocaleDateString('es-ES', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  })
+export default async function HomePage() {
+  const inventories = await getInventories()
 
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6">Inventarios</h1>
       
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="text-xl sm:text-2xl font-bold">
-            Inventario semanal de producto terminado
-          </CardTitle>
-          <p className="text-muted-foreground">{currentDate}</p>
-        </CardHeader>
-        <CardContent>
-          {/* Mobile view */}
-          <div className="block md:hidden space-y-4">
-            {products.map((product) => (
-              <div key={product.id} className="border-b pb-4">
-                <div className="font-semibold">SKU: {product.sku}</div>
-                <div className="text-sm text-muted-foreground">{product.description}</div>
-              </div>
-            ))}
-          </div>
+      {inventories.map((inventory) => {
+        // Determinar el siguiente número de conteo
+        const maxCountNumber = Math.max(
+          0,
+          ...inventory.products
+            .map(p => p.counts[0]?.countNumber ?? 0)
+        )
+        const nextCountNumber = maxCountNumber + 1
 
-          {/* Desktop view */}
-          <div className="hidden md:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>SKU</TableHead>
-                  <TableHead>Descripción</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {products.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell>{product.sku}</TableCell>
-                    <TableCell>{product.description}</TableCell>
-                  </TableRow>
+        return (
+          <Card key={inventory.id} className="w-full mb-4">
+            <CardHeader>
+              <CardTitle className="text-xl sm:text-2xl font-bold">
+                {inventory.name}
+              </CardTitle>
+              <p className="text-muted-foreground">
+                {format(new Date(inventory.date), "PPP", { locale: es })}
+              </p>
+            </CardHeader>
+            <CardContent>
+              {/* Mobile view */}
+              <div className="block md:hidden space-y-4">
+                {inventory.products.map((productInventory) => (
+                  <div key={productInventory.id} className="border-b pb-4">
+                    <div className="font-semibold">SKU: {productInventory.product.sku}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {productInventory.product.description}
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
-          </div>
+              </div>
 
-          <div className="mt-6">
-            <Link href="/conteo" className="w-full block">
-              <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                Ir a conteo
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+              {/* Desktop view */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>SKU</TableHead>
+                      <TableHead>Descripción</TableHead>
+                      <TableHead className="text-right">Productos</TableHead>
+                      <TableHead className="text-right">Conteos</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {inventory.products.map((productInventory) => (
+                      <TableRow key={productInventory.id}>
+                        <TableCell>{productInventory.product.sku}</TableCell>
+                        <TableCell>{productInventory.product.description}</TableCell>
+                        <TableCell className="text-right">
+                          {productInventory.erpQuantity}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {productInventory.counts.length}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="mt-6">
+                <Link 
+                  href={`/inventario/${inventory.id}/conteo`}
+                  className="w-full block"
+                >
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                    Ir a conteo
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })}
     </div>
   )
 }

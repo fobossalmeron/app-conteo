@@ -3,12 +3,16 @@ import { db } from "@/lib/db"
 
 export async function POST(request: Request) {
   try {
-    const { productInventoryId, shelfQuantity, surplusQuantity } = await request.json()
+    const { productInventoryId, shelfQuantity, surplusQuantity, countNumber } = await request.json()
 
     const productInventory = await db.productInventory.findUnique({
       where: { id: productInventoryId },
       include: { 
-        counts: true,
+        counts: {
+          where: {
+            countNumber: countNumber
+          }
+        },
         inventory: true
       },
     })
@@ -22,13 +26,18 @@ export async function POST(request: Request) {
 
     const totalQuantity = shelfQuantity + surplusQuantity
     const difference = totalQuantity - productInventory.erpQuantity
-    const countNumber = (productInventory.counts.length || 0) + 1
 
     // Usar una transacción para asegurar que ambas operaciones se completen
     await db.$transaction(async (tx) => {
-      // Crear el nuevo conteo
-      await tx.count.create({
-        data: {
+      // Crear o actualizar el conteo
+      await tx.count.upsert({
+        where: {
+          productInventoryId_countNumber: {
+            productInventoryId,
+            countNumber
+          }
+        },
+        create: {
           productInventoryId,
           shelfQuantity,
           surplusQuantity,
@@ -38,6 +47,13 @@ export async function POST(request: Request) {
           status: "PENDING",
           countedById: 1, // TODO: Obtener el ID del usuario actual
         },
+        update: {
+          shelfQuantity,
+          surplusQuantity,
+          totalQuantity,
+          difference,
+          status: "PENDING",
+        }
       })
 
       // Si es el primer conteo y el inventario está en PENDING, actualizarlo a IN_PROGRESS

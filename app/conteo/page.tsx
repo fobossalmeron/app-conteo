@@ -64,7 +64,11 @@ export default async function ConteoPage() {
         <Suspense fallback={<div>Cargando productos...</div>}>
           {productos.length > 0 ? (
             productos.map((producto) => (
-              <ConteoCard key={producto.id} producto={producto} />
+              <ConteoCard 
+                key={producto.id} 
+                producto={producto}
+                countNumber={producto.lastCount?.countNumber ?? 1}
+              />
             ))
           ) : (
             <p className="col-span-full text-center text-gray-500 p-4">

@@ -1,91 +1,128 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { CountStatus } from "@prisma/client";
+import { InfoIcon } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { InfoIcon } from "lucide-react";
 
 interface ConteoFormProps {
-  producto: {
-    id: number;
-    sku: string;
-    description: string;
-    erpQuantity: number;
-    status: CountStatus;
-    lastCount?: {
-      shelfQuantity: number;
-      surplusQuantity: number;
-    } | null;
+  inventoryProductId: number;
+  erpQuantity: number;
+  initialValues?: {
+    shelfQuantity: number;
+    surplusQuantity: number;
   };
-  onStatusChange: (status: "initial" | "success" | "error") => void;
+  onSuccess?: () => void;
+  onError?: () => void;
 }
 
-export default function ConteoForm({
-  producto,
-  onStatusChange,
+interface FormState {
+  status: 'initial' | 'error' | 'success';
+  shelfQuantity: string;
+  surplusQuantity: string;
+  isDisabled: boolean;
+}
+
+export default function ConteoForm({ 
+  inventoryProductId, 
+  erpQuantity, 
+  initialValues,
+  onSuccess,
+  onError 
 }: ConteoFormProps) {
-  const [formData, setFormData] = useState({
-    shelfQuantity: "",
-    surplusQuantity: "",
+  const [state, setState] = useState<FormState>({
+    status: initialValues ? 
+      (initialValues.shelfQuantity + initialValues.surplusQuantity === erpQuantity ? 'success' : 'error') : 
+      'initial',
+    shelfQuantity: initialValues?.shelfQuantity?.toString() || '',
+    surplusQuantity: initialValues?.surplusQuantity?.toString() || '',
+    isDisabled: !!initialValues
   });
-  const [status, setStatus] = useState<"initial" | "success" | "error">(
-    "initial"
-  );
+
+  const handleRecount = useCallback(() => {
+    setState({
+      status: 'initial',
+      shelfQuantity: '',
+      surplusQuantity: '',
+      isDisabled: false
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setState(prev => ({ ...prev, isDisabled: true }));
+
     try {
-      const shelfQuantity = parseInt(formData.shelfQuantity) || 0;
-      const surplusQuantity = parseInt(formData.surplusQuantity) || 0;
-      const totalQuantity = shelfQuantity + surplusQuantity;
+      const shelfQuantity = parseInt(state.shelfQuantity);
+      const surplusQuantity = parseInt(state.surplusQuantity);
+      const total = shelfQuantity + surplusQuantity;
 
       const response = await fetch("/api/count", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          productInventoryId: producto.id,
+          productInventoryId: inventoryProductId,
           shelfQuantity,
           surplusQuantity,
+          countNumber: 1,
         }),
       });
 
-      if (!response.ok) throw new Error("Error al guardar");
+      if (!response.ok) {
+        throw new Error("Error al guardar el conteo");
+      }
 
-      const newStatus =
-        totalQuantity === producto.erpQuantity ? "success" : "error";
-      setStatus(newStatus);
-      onStatusChange(newStatus);
+      const newStatus = total === erpQuantity ? "success" : "error";
+      
+      setState(prev => ({
+        ...prev,
+        status: newStatus,
+        isDisabled: true
+      }));
+      
+      if (newStatus === 'success' && onSuccess) {
+        onSuccess();
+      } else if (newStatus === 'error' && onError) {
+        onError();
+      }
     } catch (error) {
-      setStatus("error");
-      onStatusChange("error");
-      console.error("Error al guardar conteo:", error);
+      setState(prev => ({
+        ...prev,
+        status: 'error',
+        isDisabled: true
+      }));
+      if (onError) {
+        onError();
+      }
+      console.error("Error:", error);
     }
-  };
-
-  const handleRecount = () => {
-    setFormData({
-      shelfQuantity: "",
-      surplusQuantity: "",
-    });
-    setStatus("initial");
-    onStatusChange("initial");
   };
 
   return (
     <div>
       <div className="flex justify-between items-start">
         <div className="flex items-center gap-2">
-          {status !== "initial" && (
-            <Badge variant={status === "success" ? "success" : "destructive"} className="mb-4">
-              {status === "success" ? "Conteo exitoso" : "Conteo fallido"}
+          {state.status !== "initial" && (
+            <Badge 
+              variant={state.status === "success" ? "default" : "destructive"} 
+              className="mb-4"
+            >
+              {state.status === "success" ? 
+                "Conteo exitoso" : 
+                `Diferencia: ${
+                  (parseInt(state.shelfQuantity) + parseInt(state.surplusQuantity)) - erpQuantity
+                }`
+              }
             </Badge>
           )}
         </div>
@@ -94,64 +131,62 @@ export default function ConteoForm({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Anaquel</label>
+            <Label htmlFor={`shelf-${inventoryProductId}`}>Anaquel</Label>
             <Input
+              id={`shelf-${inventoryProductId}`}
               type="number"
-              value={formData.shelfQuantity}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  shelfQuantity: e.target.value,
-                }))
-              }
-              disabled={status !== "initial"}
-              min="0"
+              value={state.shelfQuantity}
+              onChange={(e) => setState(prev => ({ ...prev, shelfQuantity: e.target.value }))}
+              disabled={state.status !== 'initial'}
+              placeholder="0"
               required
+              min="0"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Excedente</label>
+            <Label htmlFor={`surplus-${inventoryProductId}`}>Excedente</Label>
             <Input
+              id={`surplus-${inventoryProductId}`}
               type="number"
-              value={formData.surplusQuantity}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  surplusQuantity: e.target.value,
-                }))
-              }
-              disabled={status !== "initial"}
-              min="0"
+              value={state.surplusQuantity}
+              onChange={(e) => setState(prev => ({ ...prev, surplusQuantity: e.target.value }))}
+              disabled={state.status !== 'initial'}
+              placeholder="0"
               required
+              min="0"
             />
           </div>
         </div>
         <div className="flex justify-between items-center gap-4">
-        {status === "initial" ? (
-          <Button type="submit" className="w-full">
-            Guardar
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            onClick={handleRecount}
-            variant={status === "success" ? "outline" : "default"}
-            className="w-full"
-          >
-            Contar de nuevo
-          </Button>
-        )}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <InfoIcon className="h-4 w-4 text-muted-foreground opacity-50 hover:opacity-100 transition-opacity" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p className="font-mono">ERP: {producto.erpQuantity}</p>
-            </TooltipContent>
-          </Tooltip>
+          {state.status === "initial" ? (
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={!state.shelfQuantity || !state.surplusQuantity || state.isDisabled}
+            >
+              {state.isDisabled ? "Guardando..." : "Guardar"}
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant={state.status === "success" ? "outline" : "default"}
+              className="w-full"
+              onClick={handleRecount}
+            >
+              Contar de nuevo
+            </Button>
+          )}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <InfoIcon className="h-4 w-4 text-muted-foreground opacity-50 hover:opacity-100 transition-opacity" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p className="font-mono">ERP: {erpQuantity}</p>
+              </TooltipContent>
+            </Tooltip>
           </TooltipProvider>
         </div>
       </form>
