@@ -7,7 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Upload, Loader2 } from 'lucide-react'
 
-export default function UploadInventoryForm() {
+interface UploadInventoryFormProps {
+  onSuccess?: () => void
+}
+
+export default function UploadInventoryForm({ onSuccess }: UploadInventoryFormProps) {
   const [title, setTitle] = useState("")
   const [file, setFile] = useState<File | null>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -59,8 +63,8 @@ export default function UploadInventoryForm() {
         throw new Error('Error al crear el inventario')
       }
 
-      router.push("/admin")
       router.refresh()
+      onSuccess?.()
     } catch (error) {
       console.error('Error:', error)
     } finally {

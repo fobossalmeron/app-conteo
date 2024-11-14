@@ -64,6 +64,7 @@ model Count {
   countedById        Int
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
+  countedAt          DateTime          @default(now())
 
   @@unique([productInventoryId, countNumber])
   @@index([status])

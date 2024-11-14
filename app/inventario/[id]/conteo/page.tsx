@@ -14,12 +14,9 @@ interface PageProps {
 
 async function getProductosParaContar(inventoryId: string) {
   try {
-    const inventory = await db.inventory.findFirst({
-      where: {
-        id: parseInt(inventoryId),
-        status: {
-          in: ["PENDING", "IN_PROGRESS"]
-        },
+    const inventory = await db.inventory.findUnique({
+      where: { 
+        id: parseInt(inventoryId) 
       },
       include: {
         products: {
@@ -34,9 +31,9 @@ async function getProductosParaContar(inventoryId: string) {
           },
         },
       },
-    })
+    });
 
-    if (!inventory) return null
+    if (!inventory) return null;
 
     return {
       inventory,
@@ -46,9 +43,10 @@ async function getProductosParaContar(inventoryId: string) {
         description: pi.product.description,
         erpQuantity: pi.erpQuantity,
         status: pi.status,
+        inventoryId: inventory.id,
         lastCount: pi.counts[0],
       }))
-    }
+    };
   } catch (error) {
     console.error('Error fetching inventory:', error)
     return null

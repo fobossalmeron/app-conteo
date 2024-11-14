@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
-import { Count, CountStatus, Product } from "@prisma/client"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { CountStatus } from "@prisma/client"
 import ConteoForm from "@/components/conteo-form"
 
 interface ProductoConteo {
@@ -11,6 +11,7 @@ interface ProductoConteo {
   description: string;
   erpQuantity: number;
   status: CountStatus;
+  inventoryId: number;
   lastCount?: {
     id: number;
     shelfQuantity: number;
@@ -42,6 +43,22 @@ export default function ConteoCard({ producto }: ConteoCardProps) {
     (producto.lastCount.difference === 0 ? "success" : "error") : 
     "initial";
 
+  const checkInventoryStatus = async () => {
+    try {
+      await fetch("/api/inventory/status", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inventoryId: producto.inventoryId,
+        }),
+      });
+    } catch (error) {
+      console.error("Error checking inventory status:", error);
+    }
+  };
+
   return (
     <ConteoCardWrapper initialStatus={initialStatus}>
       {(status) => (
@@ -60,10 +77,12 @@ export default function ConteoCard({ producto }: ConteoCardProps) {
               erpQuantity={producto.erpQuantity}
               initialValues={producto.lastCount ? {
                 shelfQuantity: producto.lastCount.shelfQuantity,
-                surplusQuantity: producto.lastCount.surplusQuantity
+                surplusQuantity: producto.lastCount.surplusQuantity,
+                countNumber: producto.lastCount.countNumber
               } : undefined}
               onSuccess={() => {
                 status.set("success");
+                checkInventoryStatus();
               }}
               onError={() => {
                 status.set("error");

@@ -19,16 +19,10 @@ interface ConteoFormProps {
   initialValues?: {
     shelfQuantity: number;
     surplusQuantity: number;
+    countNumber: number;
   };
   onSuccess?: () => void;
   onError?: () => void;
-}
-
-interface FormState {
-  status: 'initial' | 'error' | 'success';
-  shelfQuantity: string;
-  surplusQuantity: string;
-  isDisabled: boolean;
 }
 
 export default function ConteoForm({ 
@@ -38,22 +32,24 @@ export default function ConteoForm({
   onSuccess,
   onError 
 }: ConteoFormProps) {
-  const [state, setState] = useState<FormState>({
+  const [state, setState] = useState({
     status: initialValues ? 
       (initialValues.shelfQuantity + initialValues.surplusQuantity === erpQuantity ? 'success' : 'error') : 
       'initial',
     shelfQuantity: initialValues?.shelfQuantity?.toString() || '',
     surplusQuantity: initialValues?.surplusQuantity?.toString() || '',
+    countNumber: initialValues?.countNumber || 1,
     isDisabled: !!initialValues
   });
 
   const handleRecount = useCallback(() => {
-    setState({
+    setState(prev => ({
       status: 'initial',
       shelfQuantity: '',
       surplusQuantity: '',
+      countNumber: prev.countNumber,
       isDisabled: false
-    });
+    }));
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,7 +70,7 @@ export default function ConteoForm({
           productInventoryId: inventoryProductId,
           shelfQuantity,
           surplusQuantity,
-          countNumber: 1,
+          countNumber: state.countNumber + 1,
         }),
       });
 
@@ -87,6 +83,7 @@ export default function ConteoForm({
       setState(prev => ({
         ...prev,
         status: newStatus,
+        countNumber: prev.countNumber + 1,
         isDisabled: true
       }));
       
@@ -96,6 +93,7 @@ export default function ConteoForm({
         onError();
       }
     } catch (error) {
+      console.error("Error:", error);
       setState(prev => ({
         ...prev,
         status: 'error',
@@ -104,7 +102,6 @@ export default function ConteoForm({
       if (onError) {
         onError();
       }
-      console.error("Error:", error);
     }
   };
 

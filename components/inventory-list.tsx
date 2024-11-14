@@ -1,8 +1,8 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+import Link from "next/link"
 import {
   Table,
   TableBody,
@@ -11,78 +11,146 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Inventory, InventoryStatus, Product, ProductInventory, Count } from "@prisma/client"
+import { Badge } from "@/components/ui/badge"
+import { Inventory, InventoryStatus } from "@prisma/client"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { MoreHorizontal, Trash } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 interface InventoryWithRelations extends Inventory {
+  id: number
   createdBy: { name: string }
   confirmedBy: { name: string } | null
-  products: (ProductInventory & {
-    product: Product
-    counts: Count[]
-  })[]
+  products: {
+    counts: {
+      status: string
+    }[]
+  }[]
 }
 
 interface InventoryListProps {
   inventories: InventoryWithRelations[]
 }
 
-const statusStyles: Record<InventoryStatus, string> = {
-  PENDING: "bg-yellow-100 text-yellow-800",
-  IN_PROGRESS: "bg-blue-100 text-blue-800",
-  COMPLETED: "bg-green-100 text-green-800",
-  CANCELLED: "bg-red-100 text-red-800"
-}
-
-const statusLabels: Record<InventoryStatus, string> = {
-  PENDING: "Pendiente",
-  IN_PROGRESS: "En Proceso",
-  COMPLETED: "Completado",
-  CANCELLED: "Cancelado"
+const statusMap: Record<InventoryStatus, { label: string; className: string }> = {
+  PENDING: { label: "Pendiente", className: "bg-yellow-500" },
+  IN_PROGRESS: { label: "En Proceso", className: "bg-blue-500" },
+  COMPLETED: { label: "Completado", className: "bg-green-500" },
+  CANCELLED: { label: "Cancelado", className: "bg-red-500" }
 }
 
 export function InventoryList({ inventories }: InventoryListProps) {
-  const router = useRouter()
+  const handleDelete = async (id: number) => {
+    if (!confirm("¿Estás seguro de que deseas eliminar este inventario?")) return
+    
+    try {
+      const response = await fetch(`/api/inventory/${id}`, {
+        method: "DELETE",
+      })
+      
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || "Error al eliminar el inventario")
+      }
+      
+      window.location.reload()
+    } catch (error) {
+      console.error("Error:", error)
+      alert("No se pudo eliminar el inventario")
+    }
+  }
 
   return (
-    <div className="relative overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nombre</TableHead>
-            <TableHead>Fecha</TableHead>
-            <TableHead>Estado</TableHead>
-            <TableHead>Creado por</TableHead>
-            <TableHead>Productos</TableHead>
-            <TableHead className="text-right">Conteos</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {inventories.map((inventory) => (
-            <TableRow 
-              key={inventory.id} 
-              className="group hover:bg-muted/50 cursor-pointer"
-              onClick={() => router.push(`/admin/inventario/${inventory.id}`)}
-            >
-              <TableCell className="font-medium">{inventory.name}</TableCell>
-              <TableCell>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Nombre</TableHead>
+          <TableHead>Fecha de creación</TableHead>
+          <TableHead>Estado</TableHead>
+          <TableHead>Productos</TableHead>
+          <TableHead>Conteos</TableHead>
+          <TableHead className="w-[50px]"></TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {inventories.map((inventory) => (
+          <TableRow 
+            key={inventory.id} 
+            className="hover:bg-muted/50 transition-colors"
+          >
+            <TableCell>
+              <Link 
+                href={`/admin/inventario/${inventory.id}`}
+                className="block w-full cursor-pointer"
+              >
+                {inventory.name}
+              </Link>
+            </TableCell>
+            <TableCell>
+              <Link 
+                href={`/admin/inventario/${inventory.id}`}
+                className="block w-full cursor-pointer"
+              >
                 {format(new Date(inventory.date), "PPP", { locale: es })}
-              </TableCell>
-              <TableCell>
-                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusStyles[inventory.status]}`}>
-                  {statusLabels[inventory.status]}
-                </span>
-              </TableCell>
-              <TableCell>{inventory.createdBy.name}</TableCell>
-              <TableCell>{inventory.products.length}</TableCell>
-              <TableCell className="text-right">
+              </Link>
+            </TableCell>
+            <TableCell>
+              <Link 
+                href={`/admin/inventario/${inventory.id}`}
+                className="block w-full cursor-pointer"
+              >
+                <Badge className={statusMap[inventory.status].className}>
+                  {statusMap[inventory.status].label}
+                </Badge>
+              </Link>
+            </TableCell>
+            <TableCell>
+              <Link 
+                href={`/admin/inventario/${inventory.id}`}
+                className="block w-full cursor-pointer"
+              >
+                {inventory.products.length}
+              </Link>
+            </TableCell>
+            <TableCell>
+              <Link 
+                href={`/admin/inventario/${inventory.id}`}
+                className="block w-full cursor-pointer"
+              >
                 {inventory.products.reduce((acc, product) => 
                   acc + product.counts.length, 0
                 )}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+              </Link>
+            </TableCell>
+            <TableCell>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    className="h-8 w-8 p-0"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    className="text-red-600 cursor-pointer"
+                    onClick={() => handleDelete(inventory.id)}
+                  >
+                    <Trash className="mr-2 h-4 w-4" />
+                    Eliminar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   )
 } 

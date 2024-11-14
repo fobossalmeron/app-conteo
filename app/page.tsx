@@ -91,7 +91,6 @@ export default async function HomePage() {
                     <TableRow>
                       <TableHead>SKU</TableHead>
                       <TableHead>Descripción</TableHead>
-                      <TableHead className="text-right">Productos</TableHead>
                       <TableHead className="text-right">Conteos</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -100,9 +99,6 @@ export default async function HomePage() {
                       <TableRow key={productInventory.id}>
                         <TableCell>{productInventory.product.sku}</TableCell>
                         <TableCell>{productInventory.product.description}</TableCell>
-                        <TableCell className="text-right">
-                          {productInventory.erpQuantity}
-                        </TableCell>
                         <TableCell className="text-right">
                           {productInventory.counts.length}
                         </TableCell>
