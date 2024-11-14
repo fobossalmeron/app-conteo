@@ -6,6 +6,9 @@ import Link from "next/link"
 import ConteoCard from "@/components/conteo-card"
 import { notFound } from "next/navigation"
 import { revalidatePath } from "next/cache"
+import { Button } from "@/components/ui/button"
+import { Search } from "lucide-react"
+import { SearchProducts } from "./search-products"
 
 interface PageProps {
   params: Promise<{
@@ -13,7 +16,7 @@ interface PageProps {
   }>
 }
 
-// Acción del servidor para actualizar el estado
+// Separamos la acción del servidor
 async function updateInventoryStatus(inventoryId: string) {
   'use server'
   
@@ -22,12 +25,13 @@ async function updateInventoryStatus(inventoryId: string) {
       where: { id: parseInt(inventoryId) },
       data: { status: 'IN_PROGRESS' }
     })
+    
+    // Movemos revalidatePath fuera de la función principal
+    revalidatePath(`/inventario/${inventoryId}/conteo`)
+    revalidatePath('/admin')
   } catch (error) {
     console.error('Error actualizando estado del inventario:', error)
   }
-  
-  revalidatePath(`/inventario/${inventoryId}/conteo`)
-  revalidatePath('/admin')
 }
 
 async function getProductosParaContar(inventoryId: string) {
@@ -56,9 +60,10 @@ async function getProductosParaContar(inventoryId: string) {
 
     if (!inventory) return null;
 
-    // Si el inventario está pendiente, actualizamos su estado
+    // Si el inventario está pendiente, llamamos a la acción del servidor
+    // pero NO esperamos su resultado
     if (inventory.status === 'PENDING') {
-      await updateInventoryStatus(inventoryId)
+      updateInventoryStatus(inventoryId)
     }
 
     return {
@@ -97,38 +102,20 @@ export default async function ConteoPage({ params }: PageProps) {
   return (
     <div className="min-h-screen p-4 space-y-4 bg-gray-100">
       <div className="flex items-center justify-between gap-4">
-        <Link
-          href="/"
-          className="flex items-center text-sm text-muted-foreground hover:text-primary"
-        >
-          <ArrowLeft className="w-4 h-4 mr-1" />
-          Volver
+        <Link href="/">
+          <Button variant="outline" className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Volver
+          </Button>
         </Link>
-        <div className="flex-1 max-w-sm">
-          <Input type="search" placeholder="Buscar SKU" className="w-full" />
-        </div>
       </div>
-
       <div>
         <h1 className="text-2xl font-bold">{inventory.name}</h1>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Suspense fallback={<div>Cargando productos...</div>}>
-          {products.length > 0 ? (
-            products.map((producto) => (
-              <ConteoCard 
-                key={producto.id} 
-                producto={producto}
-              />
-            ))
-          ) : (
-            <p className="col-span-full text-center text-gray-500 p-4">
-              No hay productos para contar en este momento
-            </p>
-          )}
-        </Suspense>
-      </div>
+      <Suspense fallback={<div>Cargando productos...</div>}>
+        <SearchProducts products={products} />
+      </Suspense>
     </div>
   )
 } 

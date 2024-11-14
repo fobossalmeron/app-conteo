@@ -1,1 +1,0 @@
-- http://localhost:3000/inventario/5/conteo quitar la búsqueda de productos

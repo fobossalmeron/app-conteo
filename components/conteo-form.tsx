@@ -111,8 +111,8 @@ export default function ConteoForm({
         <div className="flex items-center gap-2">
           {state.status !== "initial" && (
             <Badge 
-              variant={state.status === "success" ? "default" : "destructive"} 
-              className="mb-4"
+              variant={state.status === "success" ? "success" : "destructive"} 
+              className="mb-4 p-2 px-3"
             >
               {state.status === "success" ? 
                 "Conteo exitoso" : 
