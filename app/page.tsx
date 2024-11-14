@@ -53,14 +53,6 @@ export default async function HomePage() {
       <h1 className="text-2xl font-bold mb-6">Inventarios</h1>
       
       {inventories.map((inventory) => {
-        // Determinar el siguiente número de conteo
-        const maxCountNumber = Math.max(
-          0,
-          ...inventory.products
-            .map(p => p.counts[0]?.countNumber ?? 0)
-        )
-        const nextCountNumber = maxCountNumber + 1
-
         return (
           <Card key={inventory.id} className="w-full mb-4">
             <CardHeader>

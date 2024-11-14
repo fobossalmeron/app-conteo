@@ -1,13 +1,10 @@
 import { Suspense } from "react"
 import { db } from "@/lib/db"
-import { Input } from "@/components/ui/input"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import ConteoCard from "@/components/conteo-card"
 import { notFound } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { Button } from "@/components/ui/button"
-import { Search } from "lucide-react"
 import { SearchProducts } from "./search-products"
 
 interface PageProps {
@@ -26,7 +23,7 @@ async function updateInventoryStatus(inventoryId: string) {
       data: { status: 'IN_PROGRESS' }
     })
     
-    // Movemos revalidatePath fuera de la función principal
+    // Actualizamos usando solo el path literal sin el parámetro type
     revalidatePath(`/inventario/${inventoryId}/conteo`)
     revalidatePath('/admin')
   } catch (error) {

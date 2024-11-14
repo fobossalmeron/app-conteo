@@ -10,7 +10,9 @@ import { InventoryDetails } from "@/components/inventory-details";
 import { RefreshButton } from "@/components/refresh-button";
 
 interface PageProps {
-  params: { id: string }
+  params: Promise<{
+    id: string
+  }>
 }
 
 export default async function InventoryPage({ params }: PageProps) {

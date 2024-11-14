@@ -1,14 +1,6 @@
-"use client"
-
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { PlusCircle } from "lucide-react";
-import { useState } from "react"
-import { NewInventoryModal } from "@/components/new-inventory-modal"
 
 export function Sidebar() {
-  const [isModalOpen, setIsModalOpen] = useState(false)
-
   return (
     <div className="hidden md:flex w-64 flex-col gap-1 p-4 bg-background border-r space-y-4">
       <Link href="/admin">

@@ -1,12 +1,13 @@
-import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
+import { db } from "@/lib/db"
 
 export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
-) {
+): Promise<NextResponse> {
   try {
-    const id = parseInt(params.id)
+    const { id: paramId } = await params
+    const id = parseInt(paramId as string)
     
     if (isNaN(id)) {
       return NextResponse.json(
@@ -16,7 +17,6 @@ export async function DELETE(
     }
 
     await db.$transaction(async (tx) => {
-      // Primero eliminar los conteos relacionados
       await tx.count.deleteMany({
         where: {
           productInventory: {
@@ -25,14 +25,12 @@ export async function DELETE(
         }
       })
 
-      // Luego eliminar las relaciones producto-inventario
       await tx.productInventory.deleteMany({
         where: {
           inventoryId: id
         }
       })
 
-      // Finalmente eliminar el inventario
       await tx.inventory.delete({
         where: {
           id: id
