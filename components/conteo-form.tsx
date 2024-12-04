@@ -173,7 +173,7 @@ export default function ConteoForm({
               Contar de nuevo
             </Button>
           )}
-          <TooltipProvider>
+          {/* <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -184,7 +184,7 @@ export default function ConteoForm({
                 <p className="font-mono">ERP: {erpQuantity}</p>
               </TooltipContent>
             </Tooltip>
-          </TooltipProvider>
+          </TooltipProvider> */}
         </div>
       </form>
     </div>

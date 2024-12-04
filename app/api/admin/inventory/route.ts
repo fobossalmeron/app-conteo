@@ -22,9 +22,11 @@ export async function POST(request: Request) {
     }
 
     const fileBuffer = Buffer.from(await file.arrayBuffer())
+    const fileContent = new TextDecoder('latin1').decode(fileBuffer)
+    
     const records: CSVRow[] = await new Promise((resolve, reject) => {
       const results: CSVRow[] = []
-      const parser = parse(fileBuffer, {
+      const parser = parse(fileContent, {
         columns: true,
         skip_empty_lines: true,
       })
@@ -34,40 +36,43 @@ export async function POST(request: Request) {
       parser.on("end", () => resolve(results))
     })
 
-    await db.$transaction(async (tx) => {
-      // Crear el inventario
-      const inventory = await tx.inventory.create({
-        data: {
-          name,
-          date: new Date(),
-          status: "PENDING",
-          createdById: 1, // TODO: Obtener el ID del usuario actual
-        },
-      })
-
-      // Procesar cada producto del CSV
-      for (const record of records) {
-        // Buscar o crear el producto
-        const product = await tx.product.upsert({
-          where: { sku: record.SKU },
-          update: { description: record.Descripcion },
-          create: {
-            sku: record.SKU,
-            description: record.Descripcion,
-          },
-        })
-
-        // Crear la relación producto-inventario
-        await tx.productInventory.create({
-          data: {
-            inventoryId: inventory.id,
-            productId: product.id,
-            erpQuantity: parseInt(record.Stock),
-            status: "PENDING",
-          },
-        })
-      }
+    // Crear el inventario fuera de la transacción
+    const inventory = await db.inventory.create({
+      data: {
+        name,
+        date: new Date(),
+        status: "PENDING",
+        createdById: 1, // TODO: Obtener el ID del usuario actual
+      },
     })
+
+    // Procesar los registros en lotes de 5 (como el archivo original que funcionaba)
+    const batchSize = 5
+    for (let i = 0; i < records.length; i += batchSize) {
+      const batch = records.slice(i, i + batchSize)
+      
+      await db.$transaction(async (tx) => {
+        for (const record of batch) {
+          const product = await tx.product.upsert({
+            where: { sku: record.SKU },
+            update: { description: record.Descripcion },
+            create: {
+              sku: record.SKU,
+              description: record.Descripcion,
+            },
+          })
+
+          await tx.productInventory.create({
+            data: {
+              inventoryId: inventory.id,
+              productId: product.id,
+              erpQuantity: parseInt(record.Stock),
+              status: "PENDING",
+            },
+          })
+        }
+      })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {
